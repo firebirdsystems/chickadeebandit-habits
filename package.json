@@ -1,0 +1,16 @@
+{
+  "name": "chickadee-app-habits",
+  "version": "1.0.0",
+  "description": "Habit tracking app for Chickadee Bandit households",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node dev.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "vitest": "^3.2.4"
+  }
+}

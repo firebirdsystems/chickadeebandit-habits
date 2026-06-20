@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habits</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--hub-bg, #f9fafb);
+    color: var(--hub-text, #111827);
+    min-height: 100vh;
+    padding-bottom: 2rem;
+  }
+
+  .header {
+    padding: 1rem 1.25rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .header h1 { font-size: 1.25rem; font-weight: 700; }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 0.75rem 1.25rem 0;
+    border-bottom: 2px solid var(--hub-border, #e5e7eb);
+  }
+  .tab {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--hub-text-muted, #6b7280);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+  }
+  .tab.active {
+    color: var(--hub-primary, #374151);
+    border-bottom-color: var(--hub-primary, #374151);
+  }
+
+  .tab-panel { display: none; padding: 1rem 1.25rem; }
+  .tab-panel.active { display: block; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-top: 0.75rem;
+  }
+
+  .card {
+    background: #fff;
+    border: 2px solid var(--hub-border, #e5e7eb);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    transition: border-color 0.15s;
+  }
+  .card.done   { border-color: #22c55e; }
+  .card.grace  { border-color: #f59e0b; }
+  .card.paused { border-color: #94a3b8; }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .card-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 600;
+    font-size: 1rem;
+    flex: 1;
+    min-width: 0;
+  }
+  .card-emoji { font-size: 1.2rem; flex-shrink: 0; }
+  .card-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card-actions { display: flex; gap: 0.25rem; flex-shrink: 0; }
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.2rem 0.3rem;
+    border-radius: 0.3rem;
+    font-size: 0.95rem;
+    color: var(--hub-text-muted, #9ca3af);
+    line-height: 1;
+  }
+  .icon-btn:hover { background: var(--hub-bg, #f3f4f6); color: var(--hub-text, #374151); }
+
+  .card-why {
+    font-size: 0.8rem;
+    color: var(--hub-text-muted, #6b7280);
+    font-style: italic;
+    padding-left: 1.6rem;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    padding-left: 0.1rem;
+  }
+  .stat { display: flex; flex-direction: column; align-items: center; }
+  .stat-val { font-size: 1.3rem; font-weight: 700; line-height: 1; }
+  .stat-label { font-size: 0.65rem; color: var(--hub-text-muted, #9ca3af); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 0.1rem; }
+  .weekly-progress {
+    font-size: 0.82rem;
+    color: var(--hub-text-muted, #6b7280);
+    font-weight: 500;
+    margin-left: auto;
+    text-align: right;
+  }
+  .weekly-progress.met { color: #22c55e; }
+
+  .pip-grid {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+  }
+  .pip-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    cursor: pointer;
+    flex: 1;
+  }
+  .pip-day.unscheduled { cursor: default; opacity: 0.35; }
+  .pip-dot {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--hub-border, #e5e7eb);
+    transition: background 0.15s;
+  }
+  .pip-dot.logged   { background: #22c55e; }
+  .pip-dot.grace    { background: #f59e0b; }
+  .pip-dot.today-outline { outline: 2px solid var(--hub-primary, #374151); outline-offset: 1px; }
+  .pip-label { font-size: 0.6rem; color: var(--hub-text-muted, #9ca3af); }
+
+  .log-btn {
+    width: 100%;
+    padding: 0.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .log-btn.unlogged { background: var(--hub-primary, #374151); color: #fff; }
+  .log-btn.logged   { background: #dcfce7; color: #166534; }
+  .log-btn:disabled { opacity: 0.6; cursor: default; }
+
+  .nudge {
+    font-size: 0.78rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: 0.4rem;
+    line-height: 1.4;
+  }
+  .nudge.grace    { background: #fef3c7; color: #92400e; }
+  .nudge.paused   { background: #f1f5f9; color: #475569; }
+  .nudge.recovery { background: #fef2f2; color: #991b1b; }
+
+  .badges { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+  .badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.15rem 0.4rem;
+    border-radius: 9999px;
+    background: var(--hub-bg, #f3f4f6);
+    color: var(--hub-text-muted, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--hub-primary, #374151);
+    color: #fff;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn.secondary { background: var(--hub-bg, #f3f4f6); color: var(--hub-text, #374151); border: 1px solid var(--hub-border, #d1d5db); }
+  .btn.danger { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+  .empty {
+    text-align: center;
+    color: var(--hub-text-muted, #9ca3af);
+    padding: 3rem 1rem;
+    font-size: 0.95rem;
+  }
+  .empty p { margin-top: 0.5rem; font-size: 0.85rem; }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+  }
+  .modal {
+    background: #fff;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 420px;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .modal h2 { font-size: 1.1rem; font-weight: 700; }
+  .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem; }
+
+  .field { display: flex; flex-direction: column; gap: 0.35rem; }
+  .field label { font-size: 0.8rem; font-weight: 600; color: var(--hub-text-muted, #374151); }
+  .field input, .field textarea, .field select {
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--hub-border, #d1d5db);
+    border-radius: 0.4rem;
+    font-size: 0.9rem;
+    font-family: inherit;
+    color: var(--hub-text, #111827);
+    background: #fff;
+    width: 100%;
+  }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    outline: 2px solid var(--hub-primary, #374151);
+    outline-offset: 1px;
+  }
+
+  .seg-control {
+    display: flex;
+    border: 1px solid var(--hub-border, #d1d5db);
+    border-radius: 0.4rem;
+    overflow: hidden;
+  }
+  .seg-control button {
+    flex: 1;
+    padding: 0.4rem 0.5rem;
+    border: none;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--hub-text-muted, #6b7280);
+    transition: background 0.1s, color 0.1s;
+    border-right: 1px solid var(--hub-border, #d1d5db);
+  }
+  .seg-control button:last-child { border-right: none; }
+  .seg-control button.active {
+    background: var(--hub-primary, #374151);
+    color: #fff;
+  }
+
+  .emoji-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+  .emoji-opt {
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 0.3rem;
+    border: 2px solid transparent;
+    line-height: 1;
+  }
+  .emoji-opt.selected { border-color: var(--hub-primary, #374151); background: var(--hub-bg, #f3f4f6); }
+
+  /* Pauses list */
+  .pause-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0.75rem;
+    background: #fff;
+    border: 1px solid var(--hub-border, #e5e7eb);
+    border-radius: 0.5rem;
+    gap: 0.5rem;
+  }
+  .pause-info { flex: 1; min-width: 0; }
+  .pause-title { font-weight: 600; font-size: 0.9rem; }
+  .pause-dates { font-size: 0.78rem; color: var(--hub-text-muted, #6b7280); margin-top: 0.1rem; }
+  .pause-reason { font-size: 0.78rem; color: var(--hub-text-muted, #6b7280); font-style: italic; }
+
+  #status-msg {
+    position: fixed;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937;
+    color: #fff;
+    padding: 0.5rem 1.25rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    z-index: 2000;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  #status-msg.show { opacity: 1; }
+
+  @media (max-width: 480px) {
+    .grid { grid-template-columns: 1fr; }
+    .tabs { gap: 0; overflow-x: auto; }
+    .tab { white-space: nowrap; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>✅ Habits</h1>
+  <button class="btn" onclick="openCreateModal()">+ New Habit</button>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="mine" onclick="switchTab('mine')">Mine</button>
+  <button class="tab" data-tab="family" onclick="switchTab('family')">Family</button>
+  <button class="tab" data-tab="pauses" onclick="switchTab('pauses')">Pauses</button>
+</div>
+
+<div id="tab-mine" class="tab-panel active">
+  <div class="grid" id="mine-grid"></div>
+</div>
+<div id="tab-family" class="tab-panel">
+  <div class="grid" id="family-grid"></div>
+</div>
+<div id="tab-pauses" class="tab-panel">
+  <div id="pauses-list"></div>
+</div>
+
+<div id="status-msg"></div>
+
+<script type="module">
+import {
+  todayDate, lastNDays, isScheduledDay, isPausedDay, weekNumber,
+  computeHabit, computeWeeklyHabit, milestoneReached, MILESTONES, WEEK_MILESTONES
+} from "./logic.js";
+
+// ── Hub globals ───────────────────────────────────────────────────────────────
+const DB      = window.__DB_URL      ?? null;
+const CONTEXT = window.__CONTEXT_URL ?? null;
+const EVENTS  = window.__EVENTS_URL  ?? null;
+const ME      = window.__CURRENT_MEMBER ?? null;
+const APP_ID  = window.__APP_ID ?? "habits";
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let members    = [];
+let memberMap  = new Map();
+let habits     = [];   // all visible habits
+let logMap     = new Map(); // habitId → Set of logged YYYY-MM-DD
+let pauses     = [];   // all visible pauses { id, habit_id, owner_id, start_date, end_date, reason }
+
+const DAY_LABELS = ["S","M","T","W","T","F","S"];
+const EMOJIS = ["✅","💪","🏃","📚","🥗","💧","🧘","🎯","🎸","✍️","🛌","🚴","🌱","🧹","💊","🧠","🍎","☀️","🎨","🏋️"];
+
+// ── DB helper ─────────────────────────────────────────────────────────────────
+async function db(sql, params = []) {
+  if (!DB) return { rows: [] };
+  const res = await fetch(DB, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sql, params }),
+  });
+  if (!res.ok) throw new Error(`DB error: ${res.status}`);
+  return res.json();
+}
+
+function uuid() {
+  return crypto.randomUUID?.() ??
+    "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+}
+
+// ── Events ────────────────────────────────────────────────────────────────────
+async function publishMilestone(habit, count) {
+  if (!EVENTS || !ME) return;
+  try {
+    await fetch(EVENTS, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        source_app_id: APP_ID,
+        type: "habit.milestone",
+        subject_id: ME.id,
+        payload: { habit_id: habit.id, title: habit.title, emoji: habit.emoji, count },
+      }),
+    });
+  } catch {}
+}
+
+// ── Load ──────────────────────────────────────────────────────────────────────
+async function loadMembers() {
+  if (!CONTEXT) {
+    members = [
+      { id: "demo-1", name: "Alex", role: "adult" },
+      { id: "demo-2", name: "Morgan", role: "adult" },
+      { id: "demo-3", name: "Casey", role: "child" },
+    ];
+  } else {
+    const res = await fetch(`${CONTEXT}?keys=family.members`);
+    members = ((await res.json())["family.members"]) ?? [];
+  }
+  memberMap = new Map(members.map(m => [m.id, m]));
+}
+
+async function loadData() {
+  if (!DB) {
+    loadDemoData();
+    return;
+  }
+
+  const today = todayDate();
+  const since = lastNDays(400)[0];
+
+  const [habitsRes, logsRes, pausesRes] = await Promise.all([
+    db(`SELECT * FROM app_habits__habits WHERE archived_at IS NULL ORDER BY created_at`),
+    db(`SELECT habit_id, logged_date FROM app_habits__logs WHERE logged_date >= ? ORDER BY logged_date`, [since]),
+    db(`SELECT * FROM app_habits__pauses WHERE end_date >= ? ORDER BY start_date`, [since]),
+  ]);
+
+  habits = habitsRes.rows;
+  pauses = pausesRes.rows;
+
+  logMap = new Map();
+  for (const { habit_id, logged_date } of logsRes.rows) {
+    if (!logMap.has(habit_id)) logMap.set(habit_id, new Set());
+    logMap.get(habit_id).add(logged_date);
+  }
+}
+
+function loadDemoData() {
+  const today = todayDate();
+  const d = (n) => { const dt = new Date(); dt.setDate(dt.getDate() - n); return dt.toISOString().slice(0,10); };
+
+  habits = [
+    { id: "h1", owner_id: "demo-1", title: "Morning Run", emoji: "🏃", why: "To feel calm before work", visibility: "everyone", is_group: 0, frequency: "daily", freq_target: 1, grace_days: 1, created_at: d(30), archived_at: null },
+    { id: "h2", owner_id: "demo-1", title: "Read 20 min", emoji: "📚", why: "One book per month", visibility: "private", is_group: 0, frequency: "weekdays", freq_target: 1, grace_days: 1, created_at: d(20), archived_at: null },
+    { id: "h3", owner_id: "demo-1", title: "Gym", emoji: "🏋️", why: "Build strength", visibility: "adults", is_group: 0, frequency: "x_per_week", freq_target: 3, grace_days: 0, created_at: d(60), archived_at: null },
+    { id: "h4", owner_id: "demo-2", title: "Meditation", emoji: "🧘", why: "", visibility: "everyone", is_group: 0, frequency: "daily", freq_target: 1, grace_days: 2, created_at: d(10), archived_at: null },
+  ];
+
+  // logs: h1 has a gap today (in grace), h2 logged Mon-Thu, h3 has 3 this week + weeks before, h4 is paused
+  logMap = new Map();
+  const setLogs = (id, offsets) => {
+    logMap.set(id, new Set(offsets.map(n => d(n))));
+  };
+  // h1: daily, logged every day except today → in grace
+  setLogs("h1", [1,2,3,4,5,6,7,8,9,10,11,12,13,14]);
+  // h2: weekdays only, logged Mon-Thu this week (missed today Fri)
+  setLogs("h2", [1,2,3,4,7,8,9,10,11,14,15,16,17,18]);
+  // h3: 3/week, logged 3 times this week + multiple prior weeks
+  setLogs("h3", [0,2,4, 7,9,11, 14,16,18, 21,23,25]);
+  // h4: paused (no logs needed)
+  logMap.set("h4", new Set());
+
+  pauses = [
+    { id: "p1", habit_id: "h4", owner_id: "demo-2", start_date: d(2), end_date: d(-5), reason: "Family vacation" },
+  ];
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function habitPauses(habitId) {
+  return pauses.filter(p => p.habit_id === habitId);
+}
+
+function computeStats(habit) {
+  const logs = [...(logMap.get(habit.id) ?? new Set())];
+  const hp   = habitPauses(habit.id);
+  if (habit.frequency === "x_per_week") {
+    return computeWeeklyHabit(logs, hp, habit.freq_target);
+  }
+  return computeHabit(logs, hp, habit.frequency, habit.grace_days);
+}
+
+function isAdult(member) {
+  return member && (member.role === "adult" || member.role === "admin");
+}
+
+function canSee(habit) {
+  if (!ME) return habit.visibility !== "private";
+  if (habit.owner_id === ME.id) return true;
+  if (habit.visibility === "private") return false;
+  if (habit.visibility === "adults") return isAdult(ME);
+  return true;
+}
+
+function canLog(habit) {
+  if (!ME) return false;
+  return habit.owner_id === ME.id || habit.is_group;
+}
+
+function ownerName(habit) {
+  return memberMap.get(habit.owner_id)?.name ?? "Someone";
+}
+
+function esc(s) {
+  return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────────
+function renderAll() {
+  const myHabits     = habits.filter(h => ME && h.owner_id === ME.id);
+  const familyHabits = habits.filter(h => canSee(h) && !(ME && h.owner_id === ME.id));
+
+  document.getElementById("mine-grid").innerHTML =
+    myHabits.length ? myHabits.map(renderCard).join("") : emptyState("No habits yet", "Tap &ldquo;+ New Habit&rdquo; to create your first one.");
+  document.getElementById("family-grid").innerHTML =
+    familyHabits.length ? familyHabits.map(renderCard).join("") : emptyState("No shared habits", "Family members' public habits will appear here.");
+  renderPauses();
+}
+
+function emptyState(title, sub) {
+  return `<div class="empty" style="grid-column:1/-1"><strong>${title}</strong><p>${sub}</p></div>`;
+}
+
+function renderCard(habit) {
+  const stats     = computeStats(habit);
+  const isOwner   = ME && habit.owner_id === ME.id;
+  const canLogIt  = canLog(habit);
+  const today     = todayDate();
+  const days7     = lastNDays(7);
+
+  let cardClass = "card";
+  if (stats.isPaused)       cardClass += " paused";
+  else if (stats.loggedToday) cardClass += " done";
+  else if (stats.inGrace)   cardClass += " grace";
+
+  // Badges
+  let badges = "";
+  if (habit.visibility === "private") badges += `<span class="badge">Private</span>`;
+  if (habit.visibility === "adults")  badges += `<span class="badge">Adults</span>`;
+  if (habit.is_group) badges += `<span class="badge">Group</span>`;
+  if (habit.frequency === "weekdays") badges += `<span class="badge">Weekdays</span>`;
+  if (habit.frequency === "x_per_week") badges += `<span class="badge">${habit.freq_target}×/wk</span>`;
+  if (habit.grace_days > 0) badges += `<span class="badge">${habit.grace_days}d grace</span>`;
+  if (!isOwner) badges += `<span class="badge">${esc(ownerName(habit))}</span>`;
+
+  // Stats row
+  let statsRow = `
+    <div class="stats-row">
+      <div class="stat">
+        <span class="stat-val">🔥 ${stats.current}</span>
+        <span class="stat-label">${habit.frequency === "x_per_week" ? "Weeks" : "Days"}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-val">⭐ ${stats.best}</span>
+        <span class="stat-label">Best</span>
+      </div>`;
+  if (habit.frequency === "x_per_week") {
+    const pct = stats.completedThisPeriod >= stats.targetThisPeriod;
+    statsRow += `<span class="weekly-progress ${pct ? "met" : ""}">${stats.completedThisPeriod} / ${stats.targetThisPeriod} this week</span>`;
+  }
+  statsRow += `</div>`;
+
+  // Pip grid
+  const logSet = logMap.get(habit.id) ?? new Set();
+  const pips = days7.map((d, i) => {
+    const dow = new Date(d + "T12:00:00").getDay();
+    const scheduled = isScheduledDay(d, habit.frequency);
+    const paused    = isPausedDay(d, habitPauses(habit.id));
+    const logged    = logSet.has(d);
+    const isToday   = d === today;
+    const isGrace   = !logged && isToday && stats.inGrace && scheduled && !paused;
+
+    let dotClass = "pip-dot";
+    if (logged)    dotClass += " logged";
+    else if (isGrace) dotClass += " grace";
+    if (isToday)   dotClass += " today-outline";
+
+    let dayClass = "pip-day";
+    if (!scheduled || paused) dayClass += " unscheduled";
+
+    const onClick = (canLogIt && scheduled && !paused && !stats.isPaused)
+      ? `onclick="toggleLog('${habit.id}','${d}')"` : "";
+
+    return `<div class="${dayClass}" ${onClick}>
+      <div class="${dotClass}"></div>
+      <span class="pip-label">${DAY_LABELS[dow]}</span>
+    </div>`;
+  }).join("");
+
+  // Log button
+  let logBtn = "";
+  if (canLogIt && !stats.isPaused) {
+    if (stats.loggedToday) {
+      logBtn = `<button class="log-btn logged" onclick="toggleLog('${habit.id}','${today}')">✓ Done today</button>`;
+    } else {
+      logBtn = `<button class="log-btn unlogged" onclick="openCheckinModal('${habit.id}','${today}')">Log for today</button>`;
+    }
+  }
+
+  // Nudge
+  let nudge = "";
+  if (stats.isPaused) {
+    const nextPause = habitPauses(habit.id).find(p => today >= p.start_date && today <= p.end_date);
+    const until = nextPause ? ` until ${formatDate(nextPause.end_date)}` : "";
+    nudge = `<div class="nudge paused">⏸ Paused${until}</div>`;
+  } else if (stats.inGrace) {
+    nudge = `<div class="nudge grace">⚡ Grace day — log today to stay on track.</div>`;
+  } else if (stats.current === 0 && stats.best > 0) {
+    nudge = `<div class="nudge recovery">You were at ${stats.best} — don't break twice. Log today.</div>`;
+  }
+
+  // Actions (owner only)
+  let actions = "";
+  if (isOwner) {
+    actions = `
+      <button class="icon-btn" title="Edit" onclick="openEditModal('${habit.id}')">✏️</button>
+      <button class="icon-btn" title="Pause" onclick="openPauseModal('${habit.id}')">⏸</button>
+      <button class="icon-btn" title="Archive" onclick="archiveHabit('${habit.id}')">🗑</button>`;
+  }
+
+  return `<div class="${cardClass}" id="card-${habit.id}">
+    <div class="card-header">
+      <div class="card-title-row">
+        <span class="card-emoji">${esc(habit.emoji)}</span>
+        <span class="card-title">${esc(habit.title)}</span>
+      </div>
+      <div class="card-actions">${actions}</div>
+    </div>
+    ${habit.why ? `<div class="card-why">${esc(habit.why)}</div>` : ""}
+    ${badges ? `<div class="badges">${badges}</div>` : ""}
+    ${statsRow}
+    <div class="pip-grid">${pips}</div>
+    ${logBtn}
+    ${nudge}
+  </div>`;
+}
+
+function renderPauses() {
+  const myPauses = pauses.filter(p => ME && p.owner_id === ME.id);
+  const el = document.getElementById("pauses-list");
+  if (!myPauses.length) {
+    el.innerHTML = `<div class="empty"><strong>No pauses scheduled</strong><p>Use ⏸ on a habit card to pause it for vacation, illness, or holidays.</p></div>`;
+    return;
+  }
+  el.innerHTML = myPauses.map(p => {
+    const habit = habits.find(h => h.id === p.habit_id);
+    const name  = habit ? `${esc(habit.emoji)} ${esc(habit.title)}` : "Unknown habit";
+    return `<div class="pause-item">
+      <div class="pause-info">
+        <div class="pause-title">${name}</div>
+        <div class="pause-dates">${formatDate(p.start_date)} – ${formatDate(p.end_date)}</div>
+        ${p.reason ? `<div class="pause-reason">${esc(p.reason)}</div>` : ""}
+      </div>
+      <button class="btn danger" style="font-size:0.8rem;padding:0.35rem 0.6rem" onclick="deletePause('${p.id}')">Remove</button>
+    </div>`;
+  }).join("");
+}
+
+function formatDate(iso) {
+  return new Date(iso + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+window.switchTab = function(tab) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.toggle("active", p.id === `tab-${tab}`));
+};
+
+// ── Toggle log ────────────────────────────────────────────────────────────────
+window.toggleLog = async function(habitId, date) {
+  if (!ME) return;
+  const set = logMap.get(habitId) ?? new Set();
+  const had = set.has(date);
+
+  if (had) {
+    set.delete(date);
+  } else {
+    set.add(date);
+  }
+  logMap.set(habitId, set);
+  renderAll();
+
+  try {
+    if (had) {
+      await db(`DELETE FROM app_habits__logs WHERE habit_id = ? AND logged_date = ?`, [habitId, date]);
+    } else {
+      await db(`INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, note, created_at)
+                VALUES (?, ?, ?, ?, '', datetime('now'))
+                ON CONFLICT (habit_id, logged_date) DO NOTHING`,
+        [uuid(), habitId, ME.id, date]);
+
+      // Check milestone
+      if (date === todayDate()) {
+        const habit = habits.find(h => h.id === habitId);
+        if (habit) {
+          const stats = computeStats(habit);
+          const count = habit.frequency === "x_per_week" ? stats.current : stats.current;
+          if (milestoneReached(count, habit.frequency)) {
+            publishMilestone(habit, count);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // Revert on error
+    if (had) set.add(date); else set.delete(date);
+    logMap.set(habitId, set);
+    renderAll();
+    showStatus("Could not save — try again");
+  }
+};
+
+// ── Check-in modal ────────────────────────────────────────────────────────────
+window.openCheckinModal = function(habitId, date) {
+  const habit = habits.find(h => h.id === habitId);
+  if (!habit) return;
+  const why = habit.why ? `<p style="font-size:0.8rem;color:#6b7280;font-style:italic;margin-bottom:0.25rem">${esc(habit.why)}</p>` : "";
+  openModal(`
+    <h2>${esc(habit.emoji)} Log: ${esc(habit.title)}</h2>
+    <div style="font-size:0.85rem;color:#6b7280">📅 ${new Date(date + "T12:00:00").toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}</div>
+    ${why}
+    <div class="field">
+      <label>Add a note (optional)</label>
+      <textarea id="checkin-note" placeholder="What helped you show up today?" rows="3"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="submitCheckin('${habitId}','${date}')">Log it ✓</button>
+    </div>
+  `);
+};
+
+window.submitCheckin = async function(habitId, date) {
+  if (!ME) return;
+  const note = document.getElementById("checkin-note")?.value?.trim() ?? "";
+  closeModal();
+
+  const set = logMap.get(habitId) ?? new Set();
+  set.add(date);
+  logMap.set(habitId, set);
+  renderAll();
+
+  try {
+    await db(`INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, note, created_at)
+              VALUES (?, ?, ?, ?, ?, datetime('now'))
+              ON CONFLICT (habit_id, logged_date) DO NOTHING`,
+      [uuid(), habitId, ME.id, date, note]);
+
+    const habit = habits.find(h => h.id === habitId);
+    if (habit && date === todayDate()) {
+      const stats = computeStats(habit);
+      if (milestoneReached(stats.current, habit.frequency)) {
+        publishMilestone(habit, stats.current);
+        showStatus(`🎉 ${stats.current}-${habit.frequency === "x_per_week" ? "week" : "day"} milestone!`);
+      } else {
+        showStatus("Logged ✓");
+      }
+    }
+  } catch {
+    set.delete(date);
+    logMap.set(habitId, set);
+    renderAll();
+    showStatus("Could not save — try again");
+  }
+};
+
+// ── Create / Edit modal ───────────────────────────────────────────────────────
+window.openCreateModal = function() {
+  renderHabitForm(null);
+};
+
+window.openEditModal = function(habitId) {
+  const habit = habits.find(h => h.id === habitId);
+  if (habit) renderHabitForm(habit);
+};
+
+function renderHabitForm(habit) {
+  const isEdit = !!habit;
+  const title = habit?.title ?? "";
+  const why   = habit?.why ?? "";
+  const freq  = habit?.frequency ?? "daily";
+  const ft    = habit?.freq_target ?? 3;
+  const grace = habit?.grace_days ?? 1;
+  const vis   = habit?.visibility ?? "private";
+  const grp   = habit?.is_group ?? 0;
+  const emoji = habit?.emoji ?? "✅";
+
+  const emojiOpts = EMOJIS.map(e =>
+    `<span class="emoji-opt${e === emoji ? " selected" : ""}" onclick="selectEmoji(this,'${e}')" data-emoji="${e}">${e}</span>`
+  ).join("");
+
+  const freqSeg = ["daily","weekdays","x_per_week"].map(f =>
+    `<button type="button" class="${f === freq ? "active" : ""}" onclick="selectFreq(this,'${f}')">${f === "x_per_week" ? "X/week" : f.charAt(0).toUpperCase()+f.slice(1)}</button>`
+  ).join("");
+
+  const graceSeg = [0,1,2].map(g =>
+    `<button type="button" class="${g === grace ? "active" : ""}" onclick="selectGrace(this,${g})">${g === 0 ? "None" : g === 1 ? "1 day" : "2 days"}</button>`
+  ).join("");
+
+  openModal(`
+    <h2>${isEdit ? "Edit Habit" : "New Habit"}</h2>
+    <input type="hidden" id="form-emoji" value="${esc(emoji)}">
+    <input type="hidden" id="form-freq" value="${esc(freq)}">
+    <input type="hidden" id="form-grace" value="${grace}">
+
+    <div class="field">
+      <label>Name *</label>
+      <input id="form-title" type="text" value="${esc(title)}" placeholder="e.g. Morning Run" maxlength="60" autofocus>
+    </div>
+
+    <div class="field">
+      <label>Emoji</label>
+      <div class="emoji-grid" id="emoji-grid">${emojiOpts}</div>
+    </div>
+
+    <div class="field">
+      <label>Your reason (optional)</label>
+      <input id="form-why" type="text" value="${esc(why)}" placeholder="What's your reason for this habit?" maxlength="120">
+    </div>
+
+    <div class="field">
+      <label>Frequency</label>
+      <div class="seg-control" id="freq-seg">${freqSeg}</div>
+    </div>
+
+    <div class="field" id="freq-target-field" style="${freq === "x_per_week" ? "" : "display:none"}">
+      <label>Times per week</label>
+      <select id="form-freq-target">
+        ${[2,3,4,5,6].map(n => `<option value="${n}"${n === ft ? " selected" : ""}>${n} times</option>`).join("")}
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Grace days</label>
+      <div class="seg-control" id="grace-seg">${graceSeg}</div>
+    </div>
+
+    <div class="field">
+      <label>Visibility</label>
+      <select id="form-vis">
+        <option value="private"${vis==="private"?" selected":""}>Private (just me)</option>
+        <option value="adults"${vis==="adults"?" selected":""}>Adults</option>
+        <option value="everyone"${vis==="everyone"?" selected":""}>Everyone</option>
+      </select>
+    </div>
+
+    <div class="field" style="flex-direction:row;align-items:center;gap:0.5rem">
+      <input type="checkbox" id="form-group" ${grp ? "checked" : ""} style="width:auto">
+      <label for="form-group" style="font-size:0.9rem">Group habit (anyone visible can log)</label>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveHabit(${isEdit ? `'${habit.id}'` : "null"})">${isEdit ? "Save" : "Create"}</button>
+    </div>
+  `);
+}
+
+window.selectEmoji = function(el, emoji) {
+  document.querySelectorAll(".emoji-opt").forEach(e => e.classList.remove("selected"));
+  el.classList.add("selected");
+  document.getElementById("form-emoji").value = emoji;
+};
+
+window.selectFreq = function(el, freq) {
+  document.querySelectorAll("#freq-seg button").forEach(b => b.classList.remove("active"));
+  el.classList.add("active");
+  document.getElementById("form-freq").value = freq;
+  document.getElementById("freq-target-field").style.display = freq === "x_per_week" ? "" : "none";
+};
+
+window.selectGrace = function(el, grace) {
+  document.querySelectorAll("#grace-seg button").forEach(b => b.classList.remove("active"));
+  el.classList.add("active");
+  document.getElementById("form-grace").value = grace;
+};
+
+window.saveHabit = async function(habitId) {
+  const title  = document.getElementById("form-title").value.trim();
+  if (!title) { showStatus("Name is required"); return; }
+  const emoji  = document.getElementById("form-emoji").value;
+  const why    = document.getElementById("form-why").value.trim();
+  const freq   = document.getElementById("form-freq").value;
+  const ft     = parseInt(document.getElementById("form-freq-target")?.value ?? "3", 10);
+  const grace  = parseInt(document.getElementById("form-grace").value, 10);
+  const vis    = document.getElementById("form-vis").value;
+  const grp    = document.getElementById("form-group").checked ? 1 : 0;
+
+  closeModal();
+
+  if (habitId) {
+    // Edit
+    const habit = habits.find(h => h.id === habitId);
+    if (!habit) return;
+    Object.assign(habit, { title, emoji, why, frequency: freq, freq_target: ft, grace_days: grace, visibility: vis, is_group: grp });
+    renderAll();
+    try {
+      await db(`UPDATE app_habits__habits SET title=?,emoji=?,why=?,frequency=?,freq_target=?,grace_days=?,visibility=?,is_group=? WHERE id=?`,
+        [title, emoji, why, freq, ft, grace, vis, grp, habitId]);
+    } catch { showStatus("Could not save changes"); }
+  } else {
+    // Create
+    if (!ME) return;
+    const id = uuid();
+    const now = new Date().toISOString();
+    const newHabit = { id, owner_id: ME.id, title, emoji, why, visibility: vis, is_group: grp, frequency: freq, freq_target: ft, grace_days: grace, created_at: now, archived_at: null };
+    habits.push(newHabit);
+    logMap.set(id, new Set());
+    renderAll();
+    try {
+      await db(`INSERT INTO app_habits__habits (id,owner_id,title,emoji,why,visibility,is_group,frequency,freq_target,grace_days,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+        [id, ME.id, title, emoji, why, vis, grp, freq, ft, grace, now]);
+    } catch { habits.pop(); logMap.delete(id); renderAll(); showStatus("Could not create habit"); }
+  }
+};
+
+// ── Archive ───────────────────────────────────────────────────────────────────
+window.archiveHabit = async function(habitId) {
+  const habit = habits.find(h => h.id === habitId);
+  if (!habit) return;
+  if (!confirm(`Archive "${habit.title}"? You can find it again by un-archiving later.`)) return;
+  habits = habits.filter(h => h.id !== habitId);
+  renderAll();
+  try {
+    await db(`UPDATE app_habits__habits SET archived_at=datetime('now') WHERE id=?`, [habitId]);
+  } catch { habits.push(habit); renderAll(); showStatus("Could not archive"); }
+};
+
+// ── Pause modal ───────────────────────────────────────────────────────────────
+window.openPauseModal = function(habitId) {
+  const habit = habits.find(h => h.id === habitId);
+  if (!habit) return;
+  const today  = todayDate();
+  const hp     = habitPauses(habitId);
+  const existing = hp.map(p => `
+    <div class="pause-item" style="margin-bottom:0.5rem">
+      <div class="pause-info">
+        <div class="pause-dates">${formatDate(p.start_date)} – ${formatDate(p.end_date)}</div>
+        ${p.reason ? `<div class="pause-reason">${esc(p.reason)}</div>` : ""}
+      </div>
+      <button class="btn danger" style="font-size:0.8rem;padding:0.3rem 0.6rem" onclick="deletePause('${p.id}')">Remove</button>
+    </div>`).join("");
+
+  openModal(`
+    <h2>⏸ Pause: ${esc(habit.emoji)} ${esc(habit.title)}</h2>
+    ${existing ? `<div><strong style="font-size:0.8rem">Active pauses</strong><div style="margin-top:0.4rem">${existing}</div></div>` : ""}
+    <div class="field">
+      <label>Start date</label>
+      <input id="pause-start" type="date" value="${today}">
+    </div>
+    <div class="field">
+      <label>End date</label>
+      <input id="pause-end" type="date" value="${today}">
+    </div>
+    <div class="field">
+      <label>Reason (optional)</label>
+      <input id="pause-reason" type="text" placeholder="Vacation, sick, holidays…" maxlength="80">
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="savePause('${habitId}')">Add Pause</button>
+    </div>
+  `);
+};
+
+window.savePause = async function(habitId) {
+  const start  = document.getElementById("pause-start").value;
+  const end    = document.getElementById("pause-end").value;
+  const reason = document.getElementById("pause-reason").value.trim();
+  if (!start || !end) { showStatus("Dates are required"); return; }
+  if (end < start) { showStatus("End must be after start"); return; }
+  if (!ME) return;
+
+  closeModal();
+  const id  = uuid();
+  const now = new Date().toISOString();
+  const p   = { id, habit_id: habitId, owner_id: ME.id, start_date: start, end_date: end, reason, created_at: now };
+  pauses.push(p);
+  renderAll();
+  try {
+    await db(`INSERT INTO app_habits__pauses (id,habit_id,owner_id,start_date,end_date,reason,created_at) VALUES (?,?,?,?,?,?,?)`,
+      [id, habitId, ME.id, start, end, reason, now]);
+    showStatus("Pause added");
+  } catch { pauses = pauses.filter(x => x.id !== id); renderAll(); showStatus("Could not save pause"); }
+};
+
+window.deletePause = async function(pauseId) {
+  const p = pauses.find(x => x.id === pauseId);
+  if (!p) return;
+  pauses = pauses.filter(x => x.id !== pauseId);
+  closeModal();
+  renderAll();
+  try {
+    await db(`DELETE FROM app_habits__pauses WHERE id=?`, [pauseId]);
+    showStatus("Pause removed");
+  } catch { pauses.push(p); renderAll(); showStatus("Could not remove pause"); }
+};
+
+// ── Modal helpers ─────────────────────────────────────────────────────────────
+let modalEl = null;
+function openModal(html) {
+  closeModal();
+  modalEl = document.createElement("div");
+  modalEl.className = "modal-backdrop";
+  modalEl.innerHTML = `<div class="modal">${html}</div>`;
+  modalEl.addEventListener("click", e => { if (e.target === modalEl) closeModal(); });
+  document.body.appendChild(modalEl);
+  modalEl.querySelector("input,textarea")?.focus();
+}
+window.closeModal = function() { modalEl?.remove(); modalEl = null; };
+
+// ── Status toast ──────────────────────────────────────────────────────────────
+let statusTimer;
+function showStatus(msg) {
+  const el = document.getElementById("status-msg");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(() => el.classList.remove("show"), 2500);
+}
+window.showStatus = showStatus;
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  await loadMembers();
+  await loadData();
+  renderAll();
+}
+
+init().catch(console.error);
+</script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+{
+  "id": "habits",
+  "name": "Habits",
+  "version": "1.0.0",
+  "description": "Build lasting habits with flexible frequency, grace days, and pause support. Daily, weekday, or X-per-week goals that forgive occasional misses so you keep going.",
+  "entrypoint": "index.html",
+  "runtime": "static",
+  "category": "family",
+  "tags": ["habits", "wellness", "fitness", "goals", "streaks"],
+  "data_access": {
+    "reads": ["family.members"],
+    "writes": []
+  },
+  "permissions": {
+    "default_audience": "everyone",
+    "requires_approval": false
+  },
+  "nav": {
+    "label": "Habits"
+  },
+  "storage": "db",
+  "row_policies": {
+    "habits": {
+      "kind": "owner_or_visibility",
+      "member_column": "owner_id",
+      "visibility_column": "visibility",
+      "everyone_values": ["everyone"],
+      "adult_values": ["adults", "everyone"]
+    },
+    "habit_logs": {
+      "kind": "inherit_visibility",
+      "fk_column": "habit_id",
+      "parent_table": "habits",
+      "writer_column": "logged_by"
+    },
+    "habit_pauses": {
+      "kind": "inherit_visibility",
+      "fk_column": "habit_id",
+      "parent_table": "habits",
+      "writer_column": "owner_id"
+    }
+  },
+  "exports": ["member-habits"],
+  "publishes": ["habit.milestone"],
+  "widget": { "label": "Habits", "size": "small" },
+  "resource_limits": { "max_db_bytes": 52428800 },
+  "icon": "✅",
+  "ai_access": {
+    "allowed": true,
+    "mode": "read_write",
+    "db_exports": ["active_habits", "todays_completions"],
+    "db_inserts": ["log_habit"],
+    "db_deletes": ["unlog_habit"]
+  }
+}
