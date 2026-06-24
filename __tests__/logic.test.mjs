@@ -337,7 +337,7 @@ describe("computeWeeklyHabit", () => {
     const r = computeWeeklyHabit(logs, [], 3);
     expect(r.completedThisPeriod).toBe(3);
     expect(r.current).toBeGreaterThanOrEqual(1);
-    expect(r.loggedToday).toBe(false); // depends on whether today is in those 3
+    expect(r.loggedToday).toBe(logs.includes(today));
   });
 
   it("completedThisPeriod is count of logs this week", () => {

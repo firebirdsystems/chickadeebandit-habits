@@ -8,7 +8,7 @@ INSERT INTO app_habits__logs (
 ) VALUES (
   lower(hex(randomblob(16))),
   $1,
-  'ai',
+  $3,
   COALESCE($2, DATE('now')),
   '',
   datetime('now')

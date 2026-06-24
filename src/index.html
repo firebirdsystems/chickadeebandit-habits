@@ -403,6 +403,10 @@ function uuid() {
     });
 }
 
+function isSafeId(value) {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(value);
+}
+
 // ── Events ────────────────────────────────────────────────────────────────────
 async function publishMilestone(habit, count) {
   if (!EVENTS || !ME) return;
@@ -450,11 +454,14 @@ async function loadData() {
     db(`SELECT * FROM app_habits__pauses WHERE end_date >= ? ORDER BY start_date`, [since]),
   ]);
 
-  habits = habitsRes.rows;
-  pauses = pausesRes.rows;
+  habits = (habitsRes.rows ?? []).filter(h => isSafeId(h.id) && isSafeId(h.owner_id));
+  pauses = (pausesRes.rows ?? []).filter(p =>
+    isSafeId(p.id) && isSafeId(p.habit_id) && isSafeId(p.owner_id)
+  );
 
   logMap = new Map();
-  for (const { habit_id, logged_date } of logsRes.rows) {
+  for (const { habit_id, logged_date } of logsRes.rows ?? []) {
+    if (!isSafeId(habit_id)) continue;
     if (!logMap.has(habit_id)) logMap.set(habit_id, new Set());
     logMap.get(habit_id).add(logged_date);
   }
