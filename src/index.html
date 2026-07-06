@@ -139,6 +139,7 @@
     flex: 1;
   }
   .pip-day.unscheduled { cursor: default; opacity: 0.35; }
+  .pip-day.not-mine { cursor: default; }
   .pip-dot {
     width: 20px; height: 20px;
     border-radius: 50%;
@@ -377,7 +378,7 @@ const APP_ID  = window.__APP_ID ?? "habits";
 let members    = [];
 let memberMap  = new Map();
 let habits     = [];   // all visible habits
-let logMap     = new Map(); // habitId → Set of logged YYYY-MM-DD
+let logMap     = new Map(); // habitId → Map(logged YYYY-MM-DD → logged_by member id)
 let pauses     = [];   // all visible pauses { id, habit_id, owner_id, start_date, end_date, reason }
 
 const DAY_LABELS = ["S","M","T","W","T","F","S"];
@@ -450,7 +451,7 @@ async function loadData() {
 
   const [habitsRes, logsRes, pausesRes] = await Promise.all([
     db(`SELECT * FROM app_habits__habits WHERE archived_at IS NULL ORDER BY created_at`),
-    db(`SELECT habit_id, logged_date FROM app_habits__logs WHERE logged_date >= ? ORDER BY logged_date`, [since]),
+    db(`SELECT habit_id, logged_date, logged_by FROM app_habits__logs WHERE logged_date >= ? ORDER BY logged_date`, [since]),
     db(`SELECT * FROM app_habits__pauses WHERE end_date >= ? ORDER BY start_date`, [since]),
   ]);
 
@@ -460,10 +461,10 @@ async function loadData() {
   );
 
   logMap = new Map();
-  for (const { habit_id, logged_date } of logsRes.rows ?? []) {
+  for (const { habit_id, logged_date, logged_by } of logsRes.rows ?? []) {
     if (!isSafeId(habit_id)) continue;
-    if (!logMap.has(habit_id)) logMap.set(habit_id, new Set());
-    logMap.get(habit_id).add(logged_date);
+    if (!logMap.has(habit_id)) logMap.set(habit_id, new Map());
+    logMap.get(habit_id).set(logged_date, logged_by);
   }
 }
 
@@ -480,17 +481,17 @@ function loadDemoData() {
 
   // logs: h1 has a gap today (in grace), h2 logged Mon-Thu, h3 has 3 this week + weeks before, h4 is paused
   logMap = new Map();
-  const setLogs = (id, offsets) => {
-    logMap.set(id, new Set(offsets.map(n => d(n))));
+  const setLogs = (id, offsets, by) => {
+    logMap.set(id, new Map(offsets.map(n => [d(n), by])));
   };
   // h1: daily, logged every day except today → in grace
-  setLogs("h1", [1,2,3,4,5,6,7,8,9,10,11,12,13,14]);
+  setLogs("h1", [1,2,3,4,5,6,7,8,9,10,11,12,13,14], "demo-1");
   // h2: weekdays only, logged Mon-Thu this week (missed today Fri)
-  setLogs("h2", [1,2,3,4,7,8,9,10,11,14,15,16,17,18]);
+  setLogs("h2", [1,2,3,4,7,8,9,10,11,14,15,16,17,18], "demo-1");
   // h3: 3/week, logged 3 times this week + multiple prior weeks
-  setLogs("h3", [0,2,4, 7,9,11, 14,16,18, 21,23,25]);
+  setLogs("h3", [0,2,4, 7,9,11, 14,16,18, 21,23,25], "demo-1");
   // h4: paused (no logs needed)
-  logMap.set("h4", new Set());
+  logMap.set("h4", new Map());
 
   pauses = [
     { id: "p1", habit_id: "h4", owner_id: "demo-2", start_date: d(2), end_date: d(-5), reason: "Family vacation" },
@@ -503,7 +504,7 @@ function habitPauses(habitId) {
 }
 
 function computeStats(habit) {
-  const logs = [...(logMap.get(habit.id) ?? new Set())];
+  const logs = [...(logMap.get(habit.id)?.keys() ?? [])];
   const hp   = habitPauses(habit.id);
   if (habit.frequency === "x_per_week") {
     return computeWeeklyHabit(logs, hp, habit.freq_target);
@@ -592,12 +593,16 @@ function renderCard(habit) {
   statsRow += `</div>`;
 
   // Pip grid
-  const logSet = logMap.get(habit.id) ?? new Set();
+  const logSet = logMap.get(habit.id) ?? new Map();
   const pips = days7.map((d, i) => {
     const dow = new Date(d + "T12:00:00").getDay();
     const scheduled = isScheduledDay(d, habit.frequency);
     const paused    = isPausedDay(d, habitPauses(habit.id));
     const logged    = logSet.has(d);
+    // Only the member who logged a day may un-log it (the server's
+    // inherit_visibility DELETE is scoped to logged_by), so a group-habit
+    // day logged by someone else stays filled and is not toggle-able here.
+    const loggedMine = logged && logSet.get(d) === ME?.id;
     const isToday   = d === today;
     const isGrace   = !logged && isToday && stats.inGrace && scheduled && !paused;
 
@@ -608,8 +613,11 @@ function renderCard(habit) {
 
     let dayClass = "pip-day";
     if (!scheduled || paused) dayClass += " unscheduled";
+    // A day logged by another group member is done (stays filled) but not
+    // clickable by you — drop the pointer affordance without dimming it.
+    else if (logged && !loggedMine) dayClass += " not-mine";
 
-    const onClick = (canLogIt && scheduled && !paused && !stats.isPaused)
+    const onClick = (canLogIt && scheduled && !paused && !stats.isPaused && (!logged || loggedMine))
       ? `onclick="toggleLog('${habit.id}','${d}')"` : "";
 
     return `<div class="${dayClass}" ${onClick}>
@@ -621,8 +629,13 @@ function renderCard(habit) {
   // Log button
   let logBtn = "";
   if (canLogIt && !stats.isPaused) {
-    if (stats.loggedToday) {
+    const todayBy = logSet.get(today);
+    if (stats.loggedToday && todayBy === ME?.id) {
       logBtn = `<button class="log-btn logged" onclick="toggleLog('${habit.id}','${today}')">✓ Done today</button>`;
+    } else if (stats.loggedToday) {
+      // Group habit already logged today by another member — can't un-log it.
+      const byName = esc(memberMap.get(todayBy)?.name ?? "Someone");
+      logBtn = `<button class="log-btn logged" disabled>✓ Done today by ${byName}</button>`;
     } else {
       logBtn = `<button class="log-btn unlogged" onclick="openCheckinModal('${habit.id}','${today}')">Log for today</button>`;
     }
@@ -700,13 +713,19 @@ window.switchTab = function(tab) {
 // ── Toggle log ────────────────────────────────────────────────────────────────
 window.toggleLog = async function(habitId, date) {
   if (!ME) return;
-  const set = logMap.get(habitId) ?? new Set();
+  const set = logMap.get(habitId) ?? new Map();
   const had = set.has(date);
+  const prevBy = set.get(date);
+
+  // The server scopes the DELETE to logged_by, so only the member who logged
+  // a day can remove it. Guard here so the optimistic UI never shows a delete
+  // the backend would silently reject (e.g. another member's group-habit log).
+  if (had && prevBy !== ME.id) return;
 
   if (had) {
     set.delete(date);
   } else {
-    set.add(date);
+    set.set(date, ME.id);
   }
   logMap.set(habitId, set);
   renderAll();
@@ -734,7 +753,7 @@ window.toggleLog = async function(habitId, date) {
     }
   } catch (e) {
     // Revert on error
-    if (had) set.add(date); else set.delete(date);
+    if (had) set.set(date, prevBy); else set.delete(date);
     logMap.set(habitId, set);
     renderAll();
     showStatus("Could not save — try again");
@@ -766,8 +785,8 @@ window.submitCheckin = async function(habitId, date) {
   const note = document.getElementById("checkin-note")?.value?.trim() ?? "";
   closeModal();
 
-  const set = logMap.get(habitId) ?? new Set();
-  set.add(date);
+  const set = logMap.get(habitId) ?? new Map();
+  set.set(date, ME.id);
   logMap.set(habitId, set);
   renderAll();
 
@@ -936,7 +955,7 @@ window.saveHabit = async function(habitId) {
     const now = new Date().toISOString();
     const newHabit = { id, owner_id: ME.id, title, emoji, why, visibility: vis, is_group: grp, frequency: freq, freq_target: ft, grace_days: grace, created_at: now, archived_at: null };
     habits.push(newHabit);
-    logMap.set(id, new Set());
+    logMap.set(id, new Map());
     renderAll();
     try {
       await db(`INSERT INTO app_habits__habits (id,owner_id,title,emoji,why,visibility,is_group,frequency,freq_target,grace_days,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
