@@ -1,5 +1,6 @@
 {
   "id": "habits",
+  "contexts": ["household", "shared_space"],
   "name": "Habits",
   "version": "1.0.0",
   "description": "Build lasting habits with flexible frequency, grace days, and pause support. Daily, weekday, or X-per-week goals that forgive occasional misses so you keep going.",
