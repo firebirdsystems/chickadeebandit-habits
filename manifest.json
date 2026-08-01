@@ -46,8 +46,35 @@
     }
   },
   "db_plaintext_columns": ["logged_date", "start_date", "end_date"],
+  "member_references": {
+    "habits": {
+      "column": "owner_id",
+      "on_removed": "delete",
+      "dependent_tables": [
+        {
+          "table": "logs",
+          "foreign_key": "habit_id"
+        },
+        {
+          "table": "pauses",
+          "foreign_key": "habit_id"
+        }
+      ]
+    },
+    "logs": {
+      "column": "logged_by",
+      "on_removed": "keep"
+    },
+    "pauses": {
+      "column": "owner_id",
+      "on_removed": "keep"
+    }
+  },
   "exports": ["member-habits"],
   "publishes": ["habit.milestone"],
+  "publish_acls": {
+    "habit.milestone": { "require_role": "member" }
+  },
   "widget": { "label": "Habits", "size": "small" },
   "resource_limits": { "max_db_bytes": 52428800 },
   "icon": "✅",

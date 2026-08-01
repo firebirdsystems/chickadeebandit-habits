@@ -8,7 +8,7 @@ INSERT INTO app_habits__logs (
 ) VALUES (
   lower(hex(randomblob(16))),
   $1,
-  COALESCE($2, DATE('now')),
+  COALESCE($2, :today),
   $3,
   '',
   datetime('now')
