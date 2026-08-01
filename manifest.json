@@ -45,7 +45,7 @@
       "insert_owner_only": true
     }
   },
-  "db_plaintext_columns": ["logged_date", "start_date", "end_date"],
+  "db_plaintext_columns": ["logged_date", "start_date", "end_date", "frequency"],
   "member_references": {
     "habits": {
       "column": "owner_id",
@@ -74,6 +74,21 @@
   "publishes": ["habit.milestone"],
   "publish_acls": {
     "habit.milestone": { "require_role": "member" }
+  },
+  "agenda": {
+    "kind": "routine",
+    "label": "Habits",
+    "source": {
+      "kind": "sql",
+      "query": "SELECT h.id AS id, h.title AS title, NULLIF(h.why, '') AS subtitle, h.owner_id AS member_id, :today AS when_at, CASE WHEN l.id IS NULL THEN 0 ELSE 1 END AS done FROM app_habits__habits h LEFT JOIN app_habits__logs l ON l.habit_id = h.id AND l.logged_date = :today LEFT JOIN app_habits__pauses p ON p.habit_id = h.id AND p.start_date <= :today AND p.end_date >= :today WHERE h.archived_at IS NULL AND p.id IS NULL AND (h.frequency <> 'weekdays' OR CAST(strftime('%w', :today) AS INTEGER) BETWEEN 1 AND 5) ORDER BY h.created_at LIMIT 10"
+    }
+  },
+  "glance": {
+    "source": {
+      "kind": "sql",
+      "query": "SELECT COUNT(*) AS n FROM app_habits__habits h LEFT JOIN app_habits__logs l ON l.habit_id = h.id AND l.logged_date = :today LEFT JOIN app_habits__pauses p ON p.habit_id = h.id AND p.start_date <= :today AND p.end_date >= :today WHERE h.archived_at IS NULL AND l.id IS NULL AND p.id IS NULL AND (h.frequency <> 'weekdays' OR CAST(strftime('%w', :today) AS INTEGER) BETWEEN 1 AND 5) LIMIT 1"
+    },
+    "display": { "template": "badge", "count": "n", "label": "habits left today", "severity": "info" }
   },
   "widget": { "label": "Habits", "size": "small" },
   "resource_limits": { "max_db_bytes": 52428800 },
