@@ -71,6 +71,41 @@
     }
   },
   "exports": ["member-habits"],
+  "automation_actions": {
+    "start_habit": {
+      "title": "Start a habit for a member",
+      "description": "Begin tracking a habit for someone when another app's event fires — a wellness check-in, a goal reached, a care plan step.",
+      "params": {
+        "owner_id": {
+          "type": "member",
+          "label": "Whose habit",
+          "required": true
+        },
+        "title": {
+          "type": "text",
+          "label": "Habit title",
+          "required": true
+        }
+      },
+      "dedupe": {
+        "table": "habits",
+        "column": "source_event_id"
+      },
+      "steps": [
+        {
+          "op": "insert",
+          "table": "habits",
+          "values": {
+            "id": "$uuid",
+            "owner_id": ":owner_id",
+            "title": ":title",
+            "created_at": "$now",
+            "source_event_id": "$event_id"
+          }
+        }
+      ]
+    }
+  },
   "publishes": ["habit.milestone"],
   "publish_acls": {
     "habit.milestone": { "require_role": "member" }
