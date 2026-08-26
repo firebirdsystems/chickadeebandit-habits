@@ -447,12 +447,16 @@ async function loadData() {
   }
 
   const today = todayDate();
-  const since = lastNDays(400)[0];
 
+  // The 400-day window is computed in SQL from today's date rather than as a
+  // client-side `since`: the hub preloads these reads while rendering the
+  // document (manifest.preload) and answers a request only when its text and
+  // params match, and `:today` is the one date the hub can bind. Same window
+  // as before — lastNDays(400)[0] is today minus 399 days.
   const [habitsRes, logsRes, pausesRes] = await Promise.all([
     db(`SELECT * FROM app_habits__habits WHERE archived_at IS NULL ORDER BY created_at`),
-    db(`SELECT habit_id, logged_date, logged_by FROM app_habits__logs WHERE logged_date >= ? ORDER BY logged_date`, [since]),
-    db(`SELECT * FROM app_habits__pauses WHERE end_date >= ? ORDER BY start_date`, [since]),
+    db(`SELECT habit_id, logged_date, logged_by FROM app_habits__logs WHERE logged_date >= date(?, '-399 days') ORDER BY logged_date`, [today]),
+    db(`SELECT * FROM app_habits__pauses WHERE end_date >= date(?, '-399 days') ORDER BY start_date`, [today]),
   ]);
 
   habits = (habitsRes.rows ?? []).filter(h => isSafeId(h.id) && isSafeId(h.owner_id));

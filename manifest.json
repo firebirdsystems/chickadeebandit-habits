@@ -20,6 +20,11 @@
     "label": "Habits"
   },
   "storage": "db",
+  "preload": {
+    "habits": {"sql": "SELECT * FROM app_habits__habits WHERE archived_at IS NULL ORDER BY created_at"},
+    "logs": {"sql": "SELECT habit_id, logged_date, logged_by FROM app_habits__logs WHERE logged_date >= date(?, '-399 days') ORDER BY logged_date", "params": [":today"]},
+    "pauses": {"sql": "SELECT * FROM app_habits__pauses WHERE end_date >= date(?, '-399 days') ORDER BY start_date", "params": [":today"]}
+  },
   "row_policies": {
     "habits": {
       "kind": "owner_or_visibility",
