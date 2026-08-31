@@ -474,7 +474,7 @@ async function loadData() {
 
 function loadDemoData() {
   const today = todayDate();
-  const d = (n) => { const dt = new Date(); dt.setDate(dt.getDate() - n); return dt.toISOString().slice(0,10); };
+  const d = (n) => { const dt = new Date(today + "T00:00:00Z"); dt.setUTCDate(dt.getUTCDate() - n); return dt.toISOString().slice(0,10); };
 
   habits = [
     { id: "h1", owner_id: "demo-1", title: "Morning Run", emoji: "🏃", why: "To feel calm before work", visibility: "everyone", is_group: 0, frequency: "daily", freq_target: 1, grace_days: 1, created_at: d(30), archived_at: null },
