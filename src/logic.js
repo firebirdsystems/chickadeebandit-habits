@@ -100,8 +100,11 @@ export function milestoneReached(count, frequency) {
  *   inGrace    — today is unlogged but the streak is still alive (within grace window)
  *   isPaused   — today is inside a pause range
  */
-export function computeHabit(logDates, pauseRanges, frequency, graceDays) {
-  const today = todayDate();
+// `today` is injected by the caller, which passes the HOUSEHOLD's day
+// (hubToday). The todayDate() default keeps this pure and testable in Node, but
+// it reads the VIEWER DEVICE's clock — relying on it makes a streak break or
+// survive depending on which timezone the app happens to be open in.
+export function computeHabit(logDates, pauseRanges, frequency, graceDays, today = todayDate()) {
   const logSet = new Set(logDates ?? []);
   const loggedToday = logSet.has(today);
   const isPaused = isPausedDay(today, pauseRanges ?? []);
@@ -173,8 +176,7 @@ export function computeHabit(logDates, pauseRanges, frequency, graceDays) {
  *   completedThisPeriod — logs so far this week
  *   targetThisPeriod  — freqTarget
  */
-export function computeWeeklyHabit(logDates, pauseRanges, freqTarget) {
-  const today = todayDate();
+export function computeWeeklyHabit(logDates, pauseRanges, freqTarget, today = todayDate()) {
   const logSet = new Set(logDates ?? []);
   const loggedToday = logSet.has(today);
   const isPaused = isPausedDay(today, pauseRanges ?? []);

@@ -362,8 +362,9 @@
 <div id="status-msg"></div>
 
 <script type="module">
+import { hubToday } from "/hub-sdk.js";
 import {
-  todayDate, lastNDays, isScheduledDay, isPausedDay, weekNumber,
+  lastNDays, isScheduledDay, isPausedDay, weekNumber,
   computeHabit, computeWeeklyHabit, milestoneReached, MILESTONES, WEEK_MILESTONES
 } from "./logic.js";
 
@@ -446,7 +447,14 @@ async function loadData() {
     return;
   }
 
-  const today = todayDate();
+  // hubToday(), not hubToday(): the hub binds `:today` to the HOUSEHOLD-local
+  // date, while hubToday() reads the viewer device's clock. Around midnight,
+  // or for a member in another timezone, the two differ by a day — the params
+  // then disagree and the preload silently never answers, so the app pays a
+  // round trip it was built to avoid. hubToday() is the client half of that
+  // contract. The rest of this app still renders its day grid from
+  // hubToday(); only the preload boundary has to match the hub.
+  const today = hubToday();
 
   // The 400-day window is computed in SQL from today's date rather than as a
   // client-side `since`: the hub preloads these reads while rendering the
@@ -473,7 +481,7 @@ async function loadData() {
 }
 
 function loadDemoData() {
-  const today = todayDate();
+  const today = hubToday();
   const d = (n) => { const dt = new Date(today + "T00:00:00Z"); dt.setUTCDate(dt.getUTCDate() - n); return dt.toISOString().slice(0,10); };
 
   habits = [
@@ -511,9 +519,9 @@ function computeStats(habit) {
   const logs = [...(logMap.get(habit.id)?.keys() ?? [])];
   const hp   = habitPauses(habit.id);
   if (habit.frequency === "x_per_week") {
-    return computeWeeklyHabit(logs, hp, habit.freq_target);
+    return computeWeeklyHabit(logs, hp, habit.freq_target, hubToday());
   }
-  return computeHabit(logs, hp, habit.frequency, habit.grace_days);
+  return computeHabit(logs, hp, habit.frequency, habit.grace_days, hubToday());
 }
 
 function isAdult(member) {
@@ -561,7 +569,7 @@ function renderCard(habit) {
   const stats     = computeStats(habit);
   const isOwner   = ME && habit.owner_id === ME.id;
   const canLogIt  = canLog(habit);
-  const today     = todayDate();
+  const today     = hubToday();
   const days7     = lastNDays(7);
 
   let cardClass = "card";
@@ -744,7 +752,7 @@ window.toggleLog = async function(habitId, date) {
         [uuid(), habitId, ME.id, date]);
 
       // Check milestone
-      if (date === todayDate()) {
+      if (date === hubToday()) {
         const habit = habits.find(h => h.id === habitId);
         if (habit) {
           const stats = computeStats(habit);
@@ -801,7 +809,7 @@ window.submitCheckin = async function(habitId, date) {
       [uuid(), habitId, ME.id, date, note]);
 
     const habit = habits.find(h => h.id === habitId);
-    if (habit && date === todayDate()) {
+    if (habit && date === hubToday()) {
       const stats = computeStats(habit);
       if (milestoneReached(stats.current, habit.frequency)) {
         publishMilestone(habit, stats.current);
@@ -984,7 +992,7 @@ window.archiveHabit = async function(habitId) {
 window.openPauseModal = function(habitId) {
   const habit = habits.find(h => h.id === habitId);
   if (!habit) return;
-  const today  = todayDate();
+  const today  = hubToday();
   const hp     = habitPauses(habitId);
   const existing = hp.map(p => `
     <div class="pause-item" style="margin-bottom:0.5rem">
