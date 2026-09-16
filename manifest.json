@@ -50,7 +50,7 @@
       "insert_owner_only": true
     }
   },
-  "db_plaintext_columns": ["logged_date", "start_date", "end_date", "frequency"],
+  "db_plaintext_columns": ["logged_date", "start_date", "end_date", "frequency", "is_group"],
   "member_references": {
     "habits": {
       "column": "owner_id",
