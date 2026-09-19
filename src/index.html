@@ -57,7 +57,7 @@
   }
 
   .card {
-    background: #fff;
+    background: var(--hub-surface, #fff);
     border: 2px solid var(--hub-border, #e5e7eb);
     border-radius: 0.75rem;
     padding: 1rem;
@@ -161,8 +161,8 @@
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
   }
-  .log-btn.unlogged { background: var(--hub-primary, #374151); color: #fff; }
-  .log-btn.logged   { background: #dcfce7; color: #166534; }
+  .log-btn.unlogged { background: var(--hub-primary, #374151); color: var(--hub-primary-fg, #fff); }
+  .log-btn.logged   { background: var(--hub-tint-success, #dcfce7); color: var(--hub-tint-success-fg, #166534); }
   .log-btn:disabled { opacity: 0.6; cursor: default; }
 
   .nudge {
@@ -171,9 +171,9 @@
     border-radius: 0.4rem;
     line-height: 1.4;
   }
-  .nudge.grace    { background: #fef3c7; color: #92400e; }
-  .nudge.paused   { background: #f1f5f9; color: #475569; }
-  .nudge.recovery { background: #fef2f2; color: #991b1b; }
+  .nudge.grace    { background: var(--hub-tint-warning, #fef3c7); color: var(--hub-tint-warning-fg, #92400e); }
+  .nudge.paused   { background: var(--hub-bg, #f1f5f9); color: var(--hub-text-muted, #475569); }
+  .nudge.recovery { background: var(--hub-bg, #fef2f2); color: #991b1b; }
 
   .badges { display: flex; gap: 0.35rem; flex-wrap: wrap; }
   .badge {
@@ -198,11 +198,11 @@
     font-weight: 600;
     cursor: pointer;
     background: var(--hub-primary, #374151);
-    color: #fff;
+    color: var(--hub-primary-fg, #fff);
   }
   .btn:hover { opacity: 0.9; }
   .btn.secondary { background: var(--hub-bg, #f3f4f6); color: var(--hub-text, #374151); border: 1px solid var(--hub-border, #d1d5db); }
-  .btn.danger { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+  .btn.danger { background: var(--hub-bg, #fef2f2); color: #991b1b; border: 1px solid #fecaca; }
 
   .empty {
     text-align: center;
@@ -224,7 +224,7 @@
     padding: 1rem;
   }
   .modal {
-    background: #fff;
+    background: var(--hub-surface, #fff);
     border-radius: 0.75rem;
     padding: 1.5rem;
     width: 100%;
@@ -247,7 +247,7 @@
     font-size: 0.9rem;
     font-family: inherit;
     color: var(--hub-text, #000000);
-    background: #fff;
+    background: var(--hub-surface, #fff);
     width: 100%;
   }
   .field textarea { resize: vertical; min-height: 60px; }
@@ -266,7 +266,7 @@
     flex: 1;
     padding: 0.4rem 0.5rem;
     border: none;
-    background: #fff;
+    background: var(--hub-surface, #fff);
     cursor: pointer;
     font-size: 0.82rem;
     font-weight: 500;
@@ -277,7 +277,7 @@
   .seg-control button:last-child { border-right: none; }
   .seg-control button.active {
     background: var(--hub-primary, #374151);
-    color: #fff;
+    color: var(--hub-primary-fg, #fff);
   }
 
   .emoji-grid {
@@ -301,7 +301,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.6rem 0.75rem;
-    background: #fff;
+    background: var(--hub-surface, #fff);
     border: 1px solid var(--hub-border, #e5e7eb);
     border-radius: 0.5rem;
     gap: 0.5rem;
