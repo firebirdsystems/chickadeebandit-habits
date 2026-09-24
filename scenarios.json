@@ -1,0 +1,178 @@
+{
+  "scenarios": [
+    {
+      "name": "private habits stay with the owner, adults-only habits are hidden from children, everyone habits are shared",
+      "members": { "owner": "adult", "other": "adult", "kid": "child" },
+      "steps": [
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_habits__habits (id, owner_id, title, visibility, created_at) VALUES ('h-priv', ?, 'Journal', 'private', '2026-01-01T00:00:00Z'), ('h-adult', ?, 'No wine', 'adults', '2026-01-01T00:00:00Z'), ('h-all', ?, 'Walk the dog', 'everyone', '2026-01-01T00:00:00Z')",
+          "params": ["{{owner}}", "{{owner}}", "{{owner}}"]
+        },
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES ('l-priv', 'h-priv', ?, '2026-01-02', '2026-01-02T00:00:00Z'), ('l-all', 'h-all', ?, '2026-01-02', '2026-01-02T00:00:00Z')",
+          "params": ["{{owner}}", "{{owner}}"]
+        },
+        {
+          "action": "db",
+          "as": "owner",
+          "sql": "SELECT id FROM app_habits__habits",
+          "expect": { "status": 200, "rowCount": 3 }
+        },
+        {
+          "action": "db",
+          "as": "other",
+          "sql": "SELECT id FROM app_habits__habits ORDER BY id",
+          "expect": { "status": 200, "rowCount": 2, "rowsContain": [{ "id": "h-adult" }, { "id": "h-all" }] }
+        },
+        {
+          "action": "db",
+          "as": "kid",
+          "sql": "SELECT id FROM app_habits__habits",
+          "expect": { "status": 200, "rowCount": 1, "rowsContain": [{ "id": "h-all" }] }
+        },
+        {
+          "action": "db",
+          "as": "other",
+          "sql": "SELECT id FROM app_habits__logs",
+          "expect": { "status": 200, "rowCount": 1, "rowsContain": [{ "id": "l-all" }] }
+        }
+      ]
+    },
+    {
+      "name": "only the owner can edit a habit, even a shared one",
+      "members": { "owner": "adult", "other": "adult" },
+      "steps": [
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_habits__habits (id, owner_id, title, visibility, created_at) VALUES ('h1', ?, 'Walk the dog', 'everyone', '2026-01-01T00:00:00Z')",
+          "params": ["{{owner}}"]
+        },
+        {
+          "action": "db",
+          "as": "other",
+          "sql": "UPDATE app_habits__habits SET archived_at = ? WHERE id = ?",
+          "params": ["2026-01-05T00:00:00Z", "h1"]
+        },
+        {
+          "action": "db",
+          "as": "owner",
+          "sql": "SELECT id FROM app_habits__habits WHERE archived_at IS NULL",
+          "expect": { "status": 200, "rowCount": 1, "rowsContain": [{ "id": "h1" }] }
+        },
+        {
+          "action": "db",
+          "as": "owner",
+          "sql": "UPDATE app_habits__habits SET archived_at = ? WHERE id = ?",
+          "params": ["2026-01-05T00:00:00Z", "h1"],
+          "expect": { "status": 200 }
+        },
+        {
+          "action": "db",
+          "as": "owner",
+          "sql": "SELECT id FROM app_habits__habits WHERE archived_at IS NULL",
+          "expect": { "status": 200, "rowCount": 0 }
+        }
+      ]
+    },
+    {
+      "name": "others may check in only on group habits, and a habit logs at most once per day",
+      "members": { "owner": "adult", "other": "adult" },
+      "steps": [
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_habits__habits (id, owner_id, title, visibility, is_group, created_at) VALUES ('h-solo', ?, 'Stretch', 'everyone', 0, '2026-01-01T00:00:00Z'), ('h-group', ?, 'Family walk', 'everyone', 1, '2026-01-01T00:00:00Z')",
+          "params": ["{{owner}}", "{{owner}}"]
+        },
+        {
+          "action": "db",
+          "as": "other",
+          "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, ?, ?)",
+          "params": ["l-solo", "h-solo", "{{other}}", "2026-01-02", "2026-01-02T00:00:00Z"],
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "other",
+          "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, ?, ?)",
+          "params": ["l-group", "h-group", "{{other}}", "2026-01-02", "2026-01-02T00:00:00Z"],
+          "expect": { "status": 200 }
+        },
+        {
+          "action": "db",
+          "as": "owner",
+          "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, ?, ?)",
+          "params": ["l-group-dup", "h-group", "{{owner}}", "2026-01-02", "2026-01-02T01:00:00Z"],
+          "expect": { "status": 400 }
+        },
+        {
+          "action": "db",
+          "as": "owner",
+          "sql": "SELECT id, habit_id FROM app_habits__logs",
+          "expect": { "status": 200, "rowCount": 1, "rowsContain": [{ "id": "l-group", "habit_id": "h-group" }] }
+        }
+      ]
+    },
+    {
+      "name": "log_habit is idempotent per day, active_habits counts it, unlog_habit removes it",
+      "members": { "owner": "adult" },
+      "steps": [
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_habits__habits (id, owner_id, title, visibility, created_at) VALUES ('h1', ?, 'Read', 'everyone', '2026-01-01T00:00:00Z'), ('h-priv', ?, 'Journal', 'private', '2026-01-01T00:00:00Z'), ('h-old', ?, 'Retired', 'everyone', '2026-01-01T00:00:00Z')",
+          "params": ["{{owner}}", "{{owner}}", "{{owner}}"]
+        },
+        {
+          "action": "seedRaw",
+          "sql": "UPDATE app_habits__habits SET archived_at = '2026-01-02T00:00:00Z' WHERE id = 'h-old'"
+        },
+        {
+          "action": "named",
+          "as": "owner",
+          "kind": "insert",
+          "name": "log_habit",
+          "params": ["h1", "2026-01-03", null],
+          "expect": { "status": 200 }
+        },
+        {
+          "action": "named",
+          "as": "owner",
+          "kind": "insert",
+          "name": "log_habit",
+          "params": ["h1", "2026-01-03", null],
+          "expect": { "status": 200 }
+        },
+        {
+          "action": "named",
+          "as": "owner",
+          "kind": "query",
+          "name": "active_habits",
+          "expect": { "status": 200, "rowCount": 1, "rowsContain": [{ "id": "h1", "total_logs": 1, "last_logged_date": "2026-01-03" }] }
+        },
+        {
+          "action": "db",
+          "as": "owner",
+          "sql": "SELECT id FROM app_habits__logs WHERE habit_id = 'h1' AND logged_by = ?",
+          "params": ["{{owner}}"],
+          "expect": { "status": 200, "rowCount": 1 }
+        },
+        {
+          "action": "named",
+          "as": "owner",
+          "kind": "delete",
+          "name": "unlog_habit",
+          "params": ["h1", "2026-01-03"],
+          "expect": { "status": 200 }
+        },
+        {
+          "action": "named",
+          "as": "owner",
+          "kind": "query",
+          "name": "active_habits",
+          "expect": { "status": 200, "rowCount": 1, "rowsContain": [{ "id": "h1", "total_logs": 0 }] }
+        }
+      ]
+    }
+  ]
+}
