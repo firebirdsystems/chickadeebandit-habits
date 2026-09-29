@@ -75,7 +75,6 @@
       "on_removed": "keep"
     }
   },
-  "exports": ["member-habits"],
   "automation_actions": {
     "start_habit": {
       "title": "Start a habit for a member",
