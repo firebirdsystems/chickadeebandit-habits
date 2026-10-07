@@ -339,7 +339,7 @@
 <body>
 
 <div class="header">
-  <h1>✅ Habits</h1>
+  <h1><span id="page-glyph"></span> Habits</h1>
   <button class="btn" onclick="openCreateModal()">+ New Habit</button>
 </div>
 
@@ -362,11 +362,14 @@
 <div id="status-msg"></div>
 
 <script type="module">
-import { hubToday } from "/hub-sdk.js";
+import { hubToday, glyph } from "/hub-sdk.js";
 import {
   lastNDays, isScheduledDay, isPausedDay, weekNumber,
   computeHabit, computeWeeklyHabit, milestoneReached, MILESTONES, WEEK_MILESTONES
 } from "./logic.js";
+
+// The page heading is static markup; its mark comes from the SDK.
+document.getElementById("page-glyph").innerHTML = glyph("habit-grid");
 
 // ── Hub globals ───────────────────────────────────────────────────────────────
 const DB      = window.__DB_URL      ?? null;
@@ -591,11 +594,11 @@ function renderCard(habit) {
   let statsRow = `
     <div class="stats-row">
       <div class="stat">
-        <span class="stat-val">🔥 ${stats.current}</span>
+        <span class="stat-val">${glyph("flame")} ${stats.current}</span>
         <span class="stat-label">${habit.frequency === "x_per_week" ? "Weeks" : "Days"}</span>
       </div>
       <div class="stat">
-        <span class="stat-val">⭐ ${stats.best}</span>
+        <span class="stat-val">${glyph("star")} ${stats.best}</span>
         <span class="stat-label">Best</span>
       </div>`;
   if (habit.frequency === "x_per_week") {
@@ -643,11 +646,11 @@ function renderCard(habit) {
   if (canLogIt && !stats.isPaused) {
     const todayBy = logSet.get(today);
     if (stats.loggedToday && todayBy === ME?.id) {
-      logBtn = `<button class="log-btn logged" onclick="toggleLog('${habit.id}','${today}')">✓ Done today</button>`;
+      logBtn = `<button class="log-btn logged" onclick="toggleLog('${habit.id}','${today}')">${glyph("tick")} Done today</button>`;
     } else if (stats.loggedToday) {
       // Group habit already logged today by another member — can't un-log it.
       const byName = esc(memberMap.get(todayBy)?.name ?? "Someone");
-      logBtn = `<button class="log-btn logged" disabled>✓ Done today by ${byName}</button>`;
+      logBtn = `<button class="log-btn logged" disabled>${glyph("tick")} Done today by ${byName}</button>`;
     } else {
       logBtn = `<button class="log-btn unlogged" onclick="openCheckinModal('${habit.id}','${today}')">Log for today</button>`;
     }
@@ -658,9 +661,9 @@ function renderCard(habit) {
   if (stats.isPaused) {
     const nextPause = habitPauses(habit.id).find(p => today >= p.start_date && today <= p.end_date);
     const until = nextPause ? ` until ${formatDate(nextPause.end_date)}` : "";
-    nudge = `<div class="nudge paused">⏸ Paused${until}</div>`;
+    nudge = `<div class="nudge paused">${glyph("pause")} Paused${until}</div>`;
   } else if (stats.inGrace) {
-    nudge = `<div class="nudge grace">⚡ Grace day — log today to stay on track.</div>`;
+    nudge = `<div class="nudge grace">${glyph("hourglass")} Grace day — log today to stay on track.</div>`;
   } else if (stats.current === 0 && stats.best > 0) {
     nudge = `<div class="nudge recovery">You were at ${stats.best} — don't break twice. Log today.</div>`;
   }
@@ -669,9 +672,9 @@ function renderCard(habit) {
   let actions = "";
   if (isOwner) {
     actions = `
-      <button class="icon-btn" title="Edit" onclick="openEditModal('${habit.id}')">✏️</button>
-      <button class="icon-btn" title="Pause" onclick="openPauseModal('${habit.id}')">⏸</button>
-      <button class="icon-btn" title="Archive" onclick="archiveHabit('${habit.id}')">🗑</button>`;
+      <button class="icon-btn" title="Edit" aria-label="Edit" onclick="openEditModal('${habit.id}')">${glyph("pencil")}</button>
+      <button class="icon-btn" title="Pause" aria-label="Pause" onclick="openPauseModal('${habit.id}')">${glyph("pause")}</button>
+      <button class="icon-btn" title="Archive" aria-label="Archive" onclick="archiveHabit('${habit.id}')">${glyph("trash")}</button>`;
   }
 
   return `<div class="${cardClass}" id="card-${habit.id}">
@@ -695,7 +698,7 @@ function renderPauses() {
   const myPauses = pauses.filter(p => ME && p.owner_id === ME.id);
   const el = document.getElementById("pauses-list");
   if (!myPauses.length) {
-    el.innerHTML = `<div class="empty"><strong>No pauses scheduled</strong><p>Use ⏸ on a habit card to pause it for vacation, illness, or holidays.</p></div>`;
+    el.innerHTML = `<div class="empty"><strong>No pauses scheduled</strong><p>Use ${glyph("pause")} on a habit card to pause it for vacation, illness, or holidays.</p></div>`;
     return;
   }
   el.innerHTML = myPauses.map(p => {
@@ -779,7 +782,7 @@ window.openCheckinModal = function(habitId, date) {
   const why = habit.why ? `<p style="font-size:0.8rem;color:#6b7280;font-style:italic;margin-bottom:0.25rem">${esc(habit.why)}</p>` : "";
   openModal(`
     <h2>${esc(habit.emoji)} Log: ${esc(habit.title)}</h2>
-    <div style="font-size:0.85rem;color:#6b7280">📅 ${new Date(date + "T12:00:00").toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}</div>
+    <div style="font-size:0.85rem;color:#6b7280">${glyph("calendar")} ${new Date(date + "T12:00:00").toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}</div>
     ${why}
     <div class="field">
       <label>Add a note (optional)</label>
@@ -787,7 +790,7 @@ window.openCheckinModal = function(habitId, date) {
     </div>
     <div class="modal-actions">
       <button class="btn secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn" onclick="submitCheckin('${habitId}','${date}')">Log it ✓</button>
+      <button class="btn" onclick="submitCheckin('${habitId}','${date}')">Log it ${glyph("tick")}</button>
     </div>
   `);
 };
@@ -1004,7 +1007,7 @@ window.openPauseModal = function(habitId) {
     </div>`).join("");
 
   openModal(`
-    <h2>⏸ Pause: ${esc(habit.emoji)} ${esc(habit.title)}</h2>
+    <h2>${glyph("pause")} Pause: ${esc(habit.emoji)} ${esc(habit.title)}</h2>
     ${existing ? `<div><strong style="font-size:0.8rem">Active pauses</strong><div style="margin-top:0.4rem">${existing}</div></div>` : ""}
     <div class="field">
       <label>Start date</label>
