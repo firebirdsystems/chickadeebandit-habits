@@ -1,0 +1,440 @@
+{
+  "seed": [
+    {
+      "sql": "INSERT INTO app_habits__habits (id, owner_id, title, emoji, visibility, is_group, frequency, freq_target, grace_days, created_at, why) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-45 days'), ?)",
+      "params": [
+        "ph-h1",
+        "{{me}}",
+        "Morning run",
+        "🏃",
+        "everyone",
+        0,
+        "daily",
+        1,
+        1,
+        "To feel calm before work"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__habits (id, owner_id, title, emoji, visibility, is_group, frequency, freq_target, grace_days, created_at, why) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-38 days'), ?)",
+      "params": [
+        "ph-h2",
+        "{{me}}",
+        "Read 20 minutes",
+        "📚",
+        "private",
+        0,
+        "weekdays",
+        1,
+        1,
+        "One book a month"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__habits (id, owner_id, title, emoji, visibility, is_group, frequency, freq_target, grace_days, created_at, why) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-30 days'), ?)",
+      "params": [
+        "ph-h3",
+        "{{me}}",
+        "Gym session",
+        "🏋️",
+        "adults",
+        0,
+        "x_per_week",
+        3,
+        0,
+        "Build strength before ski season"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__habits (id, owner_id, title, emoji, visibility, is_group, frequency, freq_target, grace_days, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-21 days'))",
+      "params": [
+        "ph-h4",
+        "{{me}}",
+        "Drink eight glasses of water",
+        "💧",
+        "everyone",
+        1,
+        "daily",
+        1,
+        2
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__habits (id, owner_id, title, emoji, visibility, is_group, frequency, freq_target, grace_days, created_at, why) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-14 days'), ?)",
+      "params": [
+        "ph-h5",
+        "{{me}}",
+        "Evening stretch",
+        "🧘",
+        "everyone",
+        0,
+        "daily",
+        1,
+        1,
+        "Keep my back happy"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-0 days'), datetime('now','-0 days'))",
+      "params": [
+        "ph-l-h1-0",
+        "ph-h1",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-1 days'), datetime('now','-1 days'))",
+      "params": [
+        "ph-l-h1-1",
+        "ph-h1",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-2 days'), datetime('now','-2 days'))",
+      "params": [
+        "ph-l-h1-2",
+        "ph-h1",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-3 days'), datetime('now','-3 days'))",
+      "params": [
+        "ph-l-h1-3",
+        "ph-h1",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-4 days'), datetime('now','-4 days'))",
+      "params": [
+        "ph-l-h1-4",
+        "ph-h1",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-6 days'), datetime('now','-6 days'))",
+      "params": [
+        "ph-l-h1-6",
+        "ph-h1",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-7 days'), datetime('now','-7 days'))",
+      "params": [
+        "ph-l-h1-7",
+        "ph-h1",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-8 days'), datetime('now','-8 days'))",
+      "params": [
+        "ph-l-h1-8",
+        "ph-h1",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-9 days'), datetime('now','-9 days'))",
+      "params": [
+        "ph-l-h1-9",
+        "ph-h1",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-10 days'), datetime('now','-10 days'))",
+      "params": [
+        "ph-l-h1-10",
+        "ph-h1",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-11 days'), datetime('now','-11 days'))",
+      "params": [
+        "ph-l-h1-11",
+        "ph-h1",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-13 days'), datetime('now','-13 days'))",
+      "params": [
+        "ph-l-h1-13",
+        "ph-h1",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-14 days'), datetime('now','-14 days'))",
+      "params": [
+        "ph-l-h1-14",
+        "ph-h1",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-15 days'), datetime('now','-15 days'))",
+      "params": [
+        "ph-l-h1-15",
+        "ph-h1",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-1 days'), datetime('now','-1 days'))",
+      "params": [
+        "ph-l-h2-1",
+        "ph-h2",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-2 days'), datetime('now','-2 days'))",
+      "params": [
+        "ph-l-h2-2",
+        "ph-h2",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-3 days'), datetime('now','-3 days'))",
+      "params": [
+        "ph-l-h2-3",
+        "ph-h2",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-6 days'), datetime('now','-6 days'))",
+      "params": [
+        "ph-l-h2-6",
+        "ph-h2",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-7 days'), datetime('now','-7 days'))",
+      "params": [
+        "ph-l-h2-7",
+        "ph-h2",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-8 days'), datetime('now','-8 days'))",
+      "params": [
+        "ph-l-h2-8",
+        "ph-h2",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-9 days'), datetime('now','-9 days'))",
+      "params": [
+        "ph-l-h2-9",
+        "ph-h2",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-10 days'), datetime('now','-10 days'))",
+      "params": [
+        "ph-l-h2-10",
+        "ph-h2",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-13 days'), datetime('now','-13 days'))",
+      "params": [
+        "ph-l-h2-13",
+        "ph-h2",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-0 days'), datetime('now','-0 days'))",
+      "params": [
+        "ph-l-h3-0",
+        "ph-h3",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-2 days'), datetime('now','-2 days'))",
+      "params": [
+        "ph-l-h3-2",
+        "ph-h3",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-4 days'), datetime('now','-4 days'))",
+      "params": [
+        "ph-l-h3-4",
+        "ph-h3",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-7 days'), datetime('now','-7 days'))",
+      "params": [
+        "ph-l-h3-7",
+        "ph-h3",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-9 days'), datetime('now','-9 days'))",
+      "params": [
+        "ph-l-h3-9",
+        "ph-h3",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-11 days'), datetime('now','-11 days'))",
+      "params": [
+        "ph-l-h3-11",
+        "ph-h3",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-14 days'), datetime('now','-14 days'))",
+      "params": [
+        "ph-l-h3-14",
+        "ph-h3",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-16 days'), datetime('now','-16 days'))",
+      "params": [
+        "ph-l-h3-16",
+        "ph-h3",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-0 days'), datetime('now','-0 days'))",
+      "params": [
+        "ph-l-h4-0",
+        "ph-h4",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-1 days'), datetime('now','-1 days'))",
+      "params": [
+        "ph-l-h4-1",
+        "ph-h4",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-2 days'), datetime('now','-2 days'))",
+      "params": [
+        "ph-l-h4-2",
+        "ph-h4",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-3 days'), datetime('now','-3 days'))",
+      "params": [
+        "ph-l-h4-3",
+        "ph-h4",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-5 days'), datetime('now','-5 days'))",
+      "params": [
+        "ph-l-h4-5",
+        "ph-h4",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-6 days'), datetime('now','-6 days'))",
+      "params": [
+        "ph-l-h4-6",
+        "ph-h4",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-7 days'), datetime('now','-7 days'))",
+      "params": [
+        "ph-l-h4-7",
+        "ph-h4",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-1 days'), datetime('now','-1 days'))",
+      "params": [
+        "ph-l-h5-1",
+        "ph-h5",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-2 days'), datetime('now','-2 days'))",
+      "params": [
+        "ph-l-h5-2",
+        "ph-h5",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-3 days'), datetime('now','-3 days'))",
+      "params": [
+        "ph-l-h5-3",
+        "ph-h5",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-4 days'), datetime('now','-4 days'))",
+      "params": [
+        "ph-l-h5-4",
+        "ph-h5",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, created_at) VALUES (?, ?, ?, date('now','-5 days'), datetime('now','-5 days'))",
+      "params": [
+        "ph-l-h5-5",
+        "ph-h5",
+        "{{me}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__pauses (id, habit_id, owner_id, start_date, end_date, reason, created_at) VALUES (?, ?, ?, date('now','-24 days'), date('now','-19 days'), ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-26 days'))",
+      "params": [
+        "ph-p1",
+        "ph-h1",
+        "{{me}}",
+        "Family trip to the coast"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_habits__pauses (id, habit_id, owner_id, start_date, end_date, reason, created_at) VALUES (?, ?, ?, date('now','+5 days'), date('now','+8 days'), ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-2 days'))",
+      "params": [
+        "ph-p2",
+        "ph-h3",
+        "{{me}}",
+        "Gym closed for floor refinishing"
+      ]
+    }
+  ]
+}
