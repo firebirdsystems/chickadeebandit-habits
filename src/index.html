@@ -313,6 +313,7 @@
 
   .load-error { margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; background: var(--hub-tint-danger, #fee2e2); color: var(--hub-tint-danger-fg, #b91c1c); font-size: 0.9rem; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
   .load-error[hidden] { display: none; }
+  .modal-error { font-size: 0.85rem; color: var(--hub-tint-danger-fg, #b91c1c); }
   .load-error-retry { background: none; border: 1px solid currentColor; border-radius: 8px; padding: 5px 10px; font: inherit; font-weight: 600; color: inherit; cursor: pointer; flex-shrink: 0; }
 
   #status-msg {
@@ -810,19 +811,30 @@ window.openCheckinModal = function(habitId, date) {
 window.submitCheckin = async function(habitId, date) {
   if (!ME) return;
   const note = document.getElementById("checkin-note")?.value?.trim() ?? "";
-  closeModal();
+  const form = beginSave();
+  if (!form) return;
 
-  const set = logMap.get(habitId) ?? new Map();
-  set.set(date, ME.id);
-  logMap.set(habitId, set);
-  renderAll();
-
+  // The form stays open until the hub has the log: a save that fails says so
+  // in the form and leaves the note in place to send again.
   try {
     await db(`INSERT INTO app_habits__logs (id, habit_id, logged_by, logged_date, note, created_at)
               VALUES (?, ?, ?, ?, ?, datetime('now'))
               ON CONFLICT (habit_id, logged_date) DO NOTHING`,
       [uuid(), habitId, ME.id, date, note]);
+  } catch {
+    modalError(form, "Couldn’t save — try again.");
+    return;
+  } finally {
+    endSave(form);
+  }
 
+  const set = logMap.get(habitId) ?? new Map();
+  set.set(date, ME.id);
+  logMap.set(habitId, set);
+  if (modalEl === form) closeModal();
+  renderAll();
+
+  try {
     const habit = habits.find(h => h.id === habitId);
     if (habit && date === hubToday()) {
       const stats = computeStats(habit);
@@ -833,12 +845,7 @@ window.submitCheckin = async function(habitId, date) {
         showStatus("Logged ✓");
       }
     }
-  } catch {
-    set.delete(date);
-    logMap.set(habitId, set);
-    renderAll();
-    showStatus("Could not save — try again");
-  }
+  } catch { /* the log is saved; a milestone announcement is not worth an error */ }
 };
 
 // ── Create / Edit modal ───────────────────────────────────────────────────────
@@ -963,35 +970,39 @@ window.saveHabit = async function(habitId) {
   const vis    = document.getElementById("form-vis").value;
   const grp    = document.getElementById("form-group").checked ? 1 : 0;
 
-  closeModal();
+  const form = beginSave();
+  if (!form) return;
 
-  if (habitId) {
-    // Edit
-    const habit = habits.find(h => h.id === habitId);
-    if (!habit) return;
-    const before = { ...habit };
-    Object.assign(habit, { title, emoji, why, frequency: freq, freq_target: ft, grace_days: grace, visibility: vis, is_group: grp });
-    renderAll();
-    try {
+  // The form stays open until the hub has the habit: a save that fails says so
+  // in the form and leaves what was typed in place to send again.
+  try {
+    if (habitId) {
+      // Edit
+      const habit = habits.find(h => h.id === habitId);
+      if (!habit) { closeModal(); return; }
       const { changed } = await db(`UPDATE app_habits__habits SET title=?,emoji=?,why=?,frequency=?,freq_target=?,grace_days=?,visibility=?,is_group=? WHERE id=?`,
         [title, emoji, why, freq, ft, grace, vis, grp, habitId]);
       // A write the hub narrowed to nothing answers as a success with no rows changed.
       if (changed === 0) throw new Error("not saved");
-    } catch { Object.assign(habit, before); renderAll(); showStatus("Could not save changes"); }
-  } else {
-    // Create
-    if (!ME) return;
-    const id = uuid();
-    const now = new Date().toISOString();
-    const newHabit = { id, owner_id: ME.id, title, emoji, why, visibility: vis, is_group: grp, frequency: freq, freq_target: ft, grace_days: grace, created_at: now, archived_at: null };
-    habits.push(newHabit);
-    logMap.set(id, new Map());
-    renderAll();
-    try {
+      Object.assign(habit, { title, emoji, why, frequency: freq, freq_target: ft, grace_days: grace, visibility: vis, is_group: grp });
+    } else {
+      // Create
+      if (!ME) { closeModal(); return; }
+      const id = uuid();
+      const now = new Date().toISOString();
       await db(`INSERT INTO app_habits__habits (id,owner_id,title,emoji,why,visibility,is_group,frequency,freq_target,grace_days,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
         [id, ME.id, title, emoji, why, vis, grp, freq, ft, grace, now]);
-    } catch { habits.pop(); logMap.delete(id); renderAll(); showStatus("Could not create habit"); }
+      habits.push({ id, owner_id: ME.id, title, emoji, why, visibility: vis, is_group: grp, frequency: freq, freq_target: ft, grace_days: grace, created_at: now, archived_at: null });
+      logMap.set(id, new Map());
+    }
+  } catch {
+    modalError(form, habitId ? "Couldn’t save changes — try again." : "Couldn’t create the habit — try again.");
+    return;
+  } finally {
+    endSave(form);
   }
+  if (modalEl === form) closeModal();
+  renderAll();
 };
 
 // ── Archive ───────────────────────────────────────────────────────────────────
@@ -1051,17 +1062,24 @@ window.savePause = async function(habitId) {
   if (end < start) { showStatus("End must be after start"); return; }
   if (!ME) return;
 
-  closeModal();
+  const form = beginSave();
+  if (!form) return;
   const id  = uuid();
   const now = new Date().toISOString();
-  const p   = { id, habit_id: habitId, owner_id: ME.id, start_date: start, end_date: end, reason, created_at: now };
-  pauses.push(p);
-  renderAll();
+  // As in saveHabit: the form stays open, as typed, until the hub has the pause.
   try {
     await db(`INSERT INTO app_habits__pauses (id,habit_id,owner_id,start_date,end_date,reason,created_at) VALUES (?,?,?,?,?,?,?)`,
       [id, habitId, ME.id, start, end, reason, now]);
-    showStatus("Pause added");
-  } catch { pauses = pauses.filter(x => x.id !== id); renderAll(); showStatus("Could not save pause"); }
+  } catch {
+    modalError(form, "Couldn’t save the pause — try again.");
+    return;
+  } finally {
+    endSave(form);
+  }
+  pauses.push({ id, habit_id: habitId, owner_id: ME.id, start_date: start, end_date: end, reason, created_at: now });
+  if (modalEl === form) closeModal();
+  renderAll();
+  showStatus("Pause added");
 };
 
 window.deletePause = async function(pauseId) {
@@ -1088,6 +1106,31 @@ function openModal(html) {
   modalEl.querySelector("input,textarea")?.focus();
 }
 window.closeModal = function() { modalEl?.remove(); modalEl = null; };
+
+// One save at a time per open form. beginSave answers the form being saved (or
+// null while a save is already on its way); endSave always runs, so the button
+// is there to press again after a refusal.
+let saving = false;
+function beginSave() {
+  if (saving || !modalEl) return null;
+  saving = true;
+  modalEl.querySelector(".modal-error")?.remove();
+  modalEl.querySelectorAll(".modal-actions .btn:not(.secondary)").forEach(b => { b.disabled = true; });
+  return modalEl;
+}
+function endSave(form) {
+  saving = false;
+  form.querySelectorAll(".modal-actions .btn:not(.secondary)").forEach(b => { b.disabled = false; });
+}
+// A refused save says so in the form it came from, which stays open as typed.
+function modalError(form, msg) {
+  if (modalEl !== form) { showStatus(msg); return; }
+  const el = document.createElement("div");
+  el.className = "modal-error";
+  el.setAttribute("role", "alert");
+  el.textContent = msg;
+  form.querySelector(".modal-actions")?.before(el);
+}
 
 // ── Status toast ──────────────────────────────────────────────────────────────
 let statusTimer;
