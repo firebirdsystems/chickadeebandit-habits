@@ -311,6 +311,10 @@
   .pause-dates { font-size: 0.78rem; color: var(--hub-text-muted, #6b7280); margin-top: 0.1rem; }
   .pause-reason { font-size: 0.78rem; color: var(--hub-text-muted, #6b7280); font-style: italic; }
 
+  .load-error { margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; background: var(--hub-tint-danger, #fee2e2); color: var(--hub-tint-danger-fg, #b91c1c); font-size: 0.9rem; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+  .load-error[hidden] { display: none; }
+  .load-error-retry { background: none; border: 1px solid currentColor; border-radius: 8px; padding: 5px 10px; font: inherit; font-weight: 600; color: inherit; cursor: pointer; flex-shrink: 0; }
+
   #status-msg {
     position: fixed;
     bottom: 1rem;
@@ -340,8 +344,10 @@
 
 <div class="header">
   <h1><span id="page-glyph"></span> Habits</h1>
-  <button class="btn" onclick="openCreateModal()">+ New Habit</button>
+  <button class="btn" id="new-habit-btn" onclick="openCreateModal()">+ New Habit</button>
 </div>
+
+<div id="load-error" class="load-error" data-testid="load-error" role="alert" hidden><span>Couldn’t load your habits.</span> <button type="button" class="load-error-retry" data-testid="load-retry">Try again</button></div>
 
 <div class="tabs">
   <button class="tab active" data-tab="mine" onclick="switchTab('mine')">Mine</button>
@@ -396,8 +402,9 @@ async function db(sql, params = []) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sql, params }),
   });
-  if (!res.ok) throw new Error(`DB error: ${res.status}`);
-  return res.json();
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json || typeof json !== "object" || json.error) throw new Error(json?.error || "Couldn’t reach the hub. Try again.");
+  return json;
 }
 
 function uuid() {
@@ -438,8 +445,13 @@ async function loadMembers() {
       { id: "demo-3", name: "Casey", role: "child" },
     ];
   } else {
+    // A roster that cannot be read is a failed load, not an empty household.
     const res = await fetch(`${CONTEXT}?keys=family.members`);
-    members = ((await res.json())["family.members"]) ?? [];
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json || typeof json !== "object") throw new Error("Couldn’t reach the hub. Try again.");
+    // A 200 that names the roster in `$errors` is the hub failing to read it.
+    if (Array.isArray(json.$errors) && json.$errors.includes("family.members")) throw new Error("Couldn’t reach the hub. Try again.");
+    members = json["family.members"] ?? [];
   }
   memberMap = new Map(members.map(m => [m.id, m]));
 }
@@ -957,12 +969,15 @@ window.saveHabit = async function(habitId) {
     // Edit
     const habit = habits.find(h => h.id === habitId);
     if (!habit) return;
+    const before = { ...habit };
     Object.assign(habit, { title, emoji, why, frequency: freq, freq_target: ft, grace_days: grace, visibility: vis, is_group: grp });
     renderAll();
     try {
-      await db(`UPDATE app_habits__habits SET title=?,emoji=?,why=?,frequency=?,freq_target=?,grace_days=?,visibility=?,is_group=? WHERE id=?`,
+      const { changed } = await db(`UPDATE app_habits__habits SET title=?,emoji=?,why=?,frequency=?,freq_target=?,grace_days=?,visibility=?,is_group=? WHERE id=?`,
         [title, emoji, why, freq, ft, grace, vis, grp, habitId]);
-    } catch { showStatus("Could not save changes"); }
+      // A write the hub narrowed to nothing answers as a success with no rows changed.
+      if (changed === 0) throw new Error("not saved");
+    } catch { Object.assign(habit, before); renderAll(); showStatus("Could not save changes"); }
   } else {
     // Create
     if (!ME) return;
@@ -1086,12 +1101,30 @@ function showStatus(msg) {
 window.showStatus = showStatus;
 
 // ── Init ──────────────────────────────────────────────────────────────────────
+let loadFailed = false;
+function setLoadFailed(failed) {
+  loadFailed = failed;
+  document.getElementById("load-error").hidden = !failed;
+  document.getElementById("new-habit-btn").style.display = failed ? "none" : "";
+}
+
 async function init() {
-  await loadMembers();
-  await loadData();
+  try {
+    await loadMembers();
+    await loadData();
+  } catch (e) {
+    console.error(e);
+    // The page still draws, but nothing is known: the banner says so and the
+    // lists stay blank rather than claiming there are no habits.
+    setLoadFailed(true);
+    for (const id of ["mine-grid", "family-grid", "pauses-list"]) document.getElementById(id).innerHTML = "";
+    return;
+  }
+  setLoadFailed(false);
   renderAll();
 }
 
+document.querySelector('[data-testid="load-retry"]').addEventListener("click", () => init().catch(console.error));
 init().catch(console.error);
 </script>
 </body>
